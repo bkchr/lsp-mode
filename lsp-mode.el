@@ -32,7 +32,8 @@
 
 (defun lsp--make-stdio-connection (name command)
   (lambda (filter sentinel)
-    (let ((final-command (if (consp command) command (list command))))
+    (let ((command-result (funcall command)))
+      (let ((final-command (if (consp command-result) command-result (list command-result))))
       (unless (executable-find (nth 0 final-command))
         (error (format "Couldn't find executable %s" (nth 0 final-command))))
       (make-process
@@ -41,7 +42,7 @@
         :command final-command
         :filter filter
         :sentinel sentinel
-        :stderr (generate-new-buffer-name (concat "*" name " stderr"))))))
+        :stderr (generate-new-buffer-name (concat "*" name " stderr")))))))
 
 (defun lsp--make-tcp-connection (name command host port)
   (lambda (filter sentinel)
@@ -87,7 +88,7 @@ Optional arguments:
         :send-async 'lsp--stdio-send-async
         :type (lsp--assert-type type #'symbolp)
         :new-connection (lsp--make-stdio-connection
-                          name command)
+                          name (lsp--assert-type command #'functionp))
         :get-root (lsp--assert-type get-root #'functionp)
         :ignore-regexps (lsp--verify-regexp-list (plist-get
                                                    args
